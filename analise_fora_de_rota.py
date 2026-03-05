@@ -1,3 +1,5 @@
+#Análise de fora de rota
+
 import pandas as pd
 import os
 import math
@@ -8,16 +10,21 @@ def haversine(lat1, lon1, lat2, lon2):
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
     c = 2 * math.asin(math.sqrt(a))
     return R * c
 
 # 🔹 Função para separar latitude e longitude
 def separar_lat_lon(df, coluna):
     if coluna in df.columns:
-        df[["Latitude", "Longitude"]] = df[coluna].astype(str).str.split(",", expand=True)
-        df["Latitude"] = df["Latitude"].str.strip().astype(float)
-        df["Longitude"] = df["Longitude"].str.strip().astype(float)
+        # Verifica se o DF não está vazio antes de tentar splitar
+        if not df.empty:
+            df[["Latitude", "Longitude"]] = df[coluna].astype(str).str.split(",", expand=True)
+            df["Latitude"] = df["Latitude"].str.strip().astype(float)
+            df["Longitude"] = df["Longitude"].str.strip().astype(float)
+        else:
+            df["Latitude"] = pd.Series(dtype=float)
+            df["Longitude"] = pd.Series(dtype=float)
     return df
 
 # 🔹 Caminho da pasta
@@ -47,37 +54,62 @@ for i, row in fora.iterrows():
 fora["Status_Varejo"] = status
 fora["Distancia_Varejo_km"] = distancias_min
 
-resultado1 = os.path.join(caminho, "resultado_autorizacao.xlsx")
-fora.to_excel(resultado1, index=False)
-
-print(f"✅ Primeira análise concluída! Resultado salvo em: {resultado1}")
-
 # 2️⃣ Segunda verificação (apenas os não autorizados vs retidos)
 retidos = pd.read_excel(arquivo_retidos, engine="openpyxl")
-retidos = separar_lat_lon(retidos, "Coordenadas")
 
-nao_autorizados = fora[fora["Status_Varejo"] == "Não Autorizado"].copy()
+# --- VERIFICAÇÃO SE RETIDOS ESTÁ VAZIO ---
+if retidos.empty:
+    print("\n⚠️  AVISO: Planilha de Retidos está vazia. A análise foi feita apenas com base nos clientes de Varejo.")
+    # Se estiver vazio, criamos as colunas vazias para não quebrar o merge
+    fora["Status_Retidos"] = "Não Aplicável (Retidos Vazio)"
+    fora["Distancia_Retidos_km"] = 0.0
+else:
+    retidos = separar_lat_lon(retidos, "Coordenadas")
+    nao_autorizados = fora[fora["Status_Varejo"] == "Não Autorizado"].copy()
 
-status_retidos = []
-distancias_retidos = []
-for i, row in nao_autorizados.iterrows():
-    lat_f, lon_f = row["Latitude"], row["Longitude"]
-    distancias = retidos.apply(lambda r: haversine(lat_f, lon_f, r["Latitude"], r["Longitude"]), axis=1)
-    menor_dist = distancias.min()
-    distancias_retidos.append(round(menor_dist, 2))
-    status_retidos.append("Autorizado_Retidos" if menor_dist <= 6 else "Nao_Autorizado_Final")
+    status_retidos = []
+    distancias_retidos = []
+    
+    for i, row in nao_autorizados.iterrows():
+        lat_f, lon_f = row["Latitude"], row["Longitude"]
+        distancias = retidos.apply(lambda r: haversine(lat_f, lon_f, r["Latitude"], r["Longitude"]), axis=1)
+        menor_dist = distancias.min()
+        distancias_retidos.append(round(menor_dist, 2))
+        status_retidos.append("Autorizado_Retidos" if menor_dist <= 6 else "Nao_Autorizado_Final")
 
-nao_autorizados["Status_Retidos"] = status_retidos
-nao_autorizados["Distancia_Retidos_km"] = distancias_retidos
+    nao_autorizados["Status_Retidos"] = status_retidos
+    nao_autorizados["Distancia_Retidos_km"] = distancias_retidos
 
-# 3️⃣ Juntar tudo no final
-fora = fora.merge(
-    nao_autorizados[["Latitude", "Longitude", "Status_Retidos", "Distancia_Retidos_km"]],
-    on=["Latitude", "Longitude"],
-    how="left"
-)
+    # 3️⃣ Juntar apenas se houve análise de retidos
+    fora = fora.merge(
+        nao_autorizados[["Latitude", "Longitude", "Status_Retidos", "Distancia_Retidos_km"]],
+        on=["Latitude", "Longitude"],
+        how="left"
+    )
 
+# 🔹 Criar coluna final com o resultado definitivo
+def definir_resultado(row):
+    if row["Status_Varejo"] == "Autorizado":
+        return "Autorizado"
+    elif row["Status_Varejo"] == "Não Autorizado":
+        # Se veio de retidos e deu autorizado
+        if row.get("Status_Retidos") == "Autorizado_Retidos":
+            return "Autorizado"
+        else:
+            return "Não Autorizado"
+    else:
+        return "Indefinido"
+
+fora["Resultado_Final"] = fora.apply(definir_resultado, axis=1)
+
+# 🔹 Salvar arquivo final
 resultado_final = os.path.join(caminho, "resultado_autorizacao_final.xlsx")
 fora.to_excel(resultado_final, index=False)
 
-print(f"✅ Segunda análise concluída! Resultado salvo em: {resultado_final}")
+print(f"✅ Análise concluída! Resultado salvo em: {resultado_final}")
+print("📊 Coluna 'Resultado_Final' adicionada com sucesso!")
+
+# 🔹 Resumo rápido no terminal
+resumo = fora["Resultado_Final"].value_counts()
+print("\n📈 RESUMO FINAL:")
+print(resumo)
