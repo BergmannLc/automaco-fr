@@ -1,6 +1,17 @@
-2026/03/05-11:14:56.464 3848 Reusing MANIFEST C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/03/05-11:14:56.476 3848 Recovering log #496
-2026/03/05-11:14:56.480 3848 Reusing old log C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/000496.log 
-2026/03/05-11:16:57.392 3f70 Level-0 table #500: started
-2026/03/05-11:16:57.399 3f70 Level-0 table #500: 9758 bytes OK
-2026/03/05-11:16:57.404 3f70 Delete type=0 #496
+2026/03/18-10:45:02.026 3e6c Reusing MANIFEST C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/18-10:45:02.030 3e6c Recovering log #521
+2026/03/18-10:45:02.030 3e6c Level-0 table #523: started
+2026/03/18-10:45:02.042 3e6c Level-0 table #523: 11958 bytes OK
+2026/03/18-10:45:02.043 3e6c Recovering log #523
+2026/03/18-10:45:02.046 3e6c Reusing old log C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/000523.log 
+2026/03/18-10:45:02.054 3e6c Delete type=0 #521
+2026/03/18-10:45:02.055 3e6c Delete type=2 #524
+2026/03/18-10:45:02.058 3e70 Compacting 4@0 + 1@1 files
+2026/03/18-10:45:02.077 3e70 Generated table #524@0: 2057 keys, 82467 bytes
+2026/03/18-10:45:02.078 3e70 Compacted 4@0 + 1@1 files => 82467 bytes
+2026/03/18-10:45:02.081 3e70 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/18-10:45:02.082 3e70 Delete type=2 #515
+2026/03/18-10:45:02.082 3e70 Delete type=2 #517
+2026/03/18-10:45:02.082 3e70 Delete type=2 #519
+2026/03/18-10:45:02.082 3e70 Delete type=2 #521
+2026/03/18-10:45:02.082 3e70 Delete type=2 #523
