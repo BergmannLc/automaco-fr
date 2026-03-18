@@ -85,40 +85,29 @@ def limpa_ciclo(v):
     except Exception:
         return re.sub(r"\s+", "", str(v)).strip()
 
+def limpar_numero(numero):
+    """Mantém só dígitos para usar na URL do WhatsApp."""
+    return re.sub(r"\D", "", str(numero))
+
 def abrir_chat(driver, wait, nome, numero):
     """
-    Abre o chat do WhatsApp via busca pelo NOME.
-    Se não achar, abre por número.
+    Abre o chat do WhatsApp DIRETAMENTE PELO NÚMERO.
+    Isso evita erro da busca por nome não abrir a conversa certa.
     """
     try:
-        search = wait.until(EC.presence_of_element_located(
-            (By.XPATH, "//div[@contenteditable='true'][@data-tab='3']")
-        ))
-        search.click()
-        search.send_keys(Keys.CONTROL, 'a')
-        search.send_keys(Keys.DELETE)
+        numero_limpo = limpar_numero(numero)
+        url = f"https://web.whatsapp.com/send?phone={numero_limpo}&app_absent=0"
+        driver.get(url)
 
-        if nome:
-            search.send_keys(nome)
-            time.sleep(1.2)
-            search.send_keys(Keys.ENTER)
-        else:
-            driver.get(f"https://web.whatsapp.com/send?phone={numero}")
-
+        # espera a caixa de mensagem do chat carregar
         wait.until(EC.presence_of_element_located(
             (By.XPATH, "//div[@contenteditable='true'][@data-tab='10']")
         ))
+
+        time.sleep(1.0)
         return True
     except Exception:
-        # fallback por número
-        try:
-            driver.get(f"https://web.whatsapp.com/send?phone={numero}")
-            wait.until(EC.presence_of_element_located(
-                (By.XPATH, "//div[@contenteditable='true'][@data-tab='10']")
-            ))
-            return True
-        except Exception:
-            return False
+        return False
 
 def enviar_mensagem_unica(driver, wait, mensagem):
     """Copia o texto completo e envia com CTRL+V (garante envio único)."""
@@ -169,10 +158,10 @@ df = df.rename(columns={
 })
 df = df[["setor", "sold", "razao social", "dia", "ciclo", "nao autorizado", "retorno"]].copy()
 
-# ✅ CORREÇÃO PRINCIPAL: normaliza SETOR para inteiro (evita '118.0' vs '118')
+# normaliza SETOR para inteiro
 df["setor"] = pd.to_numeric(df["setor"], errors="coerce").astype("Int64")
 
-# opcional: remove linhas sem setor
+# remove linhas sem setor
 df = df[df["setor"].notna()].copy()
 
 # diagnóstico rápido
@@ -206,7 +195,7 @@ for setor in setores_planilha:
         continue
 
     nome, numero = CONTATOS_SETORES[setor]
-    subset = df[df["setor"] == setor].copy()  # ✅ filtro correto
+    subset = df[df["setor"] == setor].copy()
 
     if subset.empty:
         print(f"⚠️ Setor {setor} sem registros.")
@@ -217,7 +206,6 @@ for setor in setores_planilha:
     linhas = [header]
 
     for i, r in enumerate(subset.itertuples(index=False), 1):
-        # colunas: setor, sold, razao, dia, ciclo, situacao, retorno
         sold = str(r[1]).strip()
         razao = str(r[2]).strip()
         dia = str(r[3]).strip()
@@ -258,4 +246,5 @@ print(f"⚠️ Sem registros (após filtro): {sem_registros}")
 
 if MANTER_WHATSAPP_ABERTO_NO_FIM:
     input("\nPressione ENTER para fechar o WhatsApp/Chrome...")
+
 driver.quit()
