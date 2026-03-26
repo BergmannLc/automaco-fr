@@ -8,12 +8,15 @@ import unicodedata
 import pyperclip
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.action_chains import ActionChains
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 # ===== CONFIGURAÇÕES =====
@@ -75,7 +78,7 @@ CONTATOS_SETORES = {
 }
 
 
-# ===== FUNÇÕES =====
+# ===== FUNÇÕES GERAIS =====
 def normalizar(txt):
     return unicodedata.normalize("NFKD", str(txt)).encode("ASCII", "ignore").decode().strip().lower()
 
@@ -89,37 +92,200 @@ def limpar_numero(numero):
     """Mantém só dígitos para usar na URL do WhatsApp."""
     return re.sub(r"\D", "", str(numero))
 
-def abrir_chat(driver, wait, nome, numero):
-    """
-    Abre o chat do WhatsApp DIRETAMENTE PELO NÚMERO.
-    Isso evita erro da busca por nome não abrir a conversa certa.
-    """
+def garantir_diretorio_perfil(path):
+    pasta = os.path.abspath(os.path.normpath(path))
+    os.makedirs(pasta, exist_ok=True)
+    return pasta
+
+
+# ===== SELENIUM / WHATSAPP =====
+def preparar_janela(driver):
     try:
-        numero_limpo = limpar_numero(numero)
-        url = f"https://web.whatsapp.com/send?phone={numero_limpo}&app_absent=0"
-        driver.get(url)
+        driver.maximize_window()
+    except Exception:
+        pass
 
-        # espera a caixa de mensagem do chat carregar
-        wait.until(EC.presence_of_element_located(
-            (By.XPATH, "//div[@contenteditable='true'][@data-tab='10']")
-        ))
+    try:
+        driver.set_window_size(1600, 1000)
+    except Exception:
+        pass
 
-        time.sleep(1.0)
+def clicar_elemento(driver, elemento):
+    try:
+        elemento.click()
+        return True
+    except Exception:
+        pass
+
+    try:
+        ActionChains(driver).move_to_element(elemento).pause(0.2).click(elemento).perform()
+        return True
+    except Exception:
+        pass
+
+    try:
+        driver.execute_script("arguments[0].click();", elemento)
+        return True
+    except Exception:
+        pass
+
+    return False
+
+def esperar_whatsapp_pronto(driver, timeout=120):
+    wait = WebDriverWait(driver, timeout)
+    candidatos = [
+        (By.ID, "side"),
+        (By.ID, "pane-side"),
+        (By.XPATH, '//*[contains(text(), "Pesquisar ou começar uma nova conversa")]'),
+        (By.XPATH, '//*[contains(@aria-label, "Pesquisar")]'),
+        (By.XPATH, '//*[contains(@title, "Pesquisar")]'),
+        (By.XPATH, '//div[@id="main"]'),
+    ]
+
+    ultimo_erro = None
+    for by, sel in candidatos:
+        try:
+            wait.until(EC.presence_of_element_located((by, sel)))
+            return True
+        except Exception as e:
+            ultimo_erro = e
+            continue
+
+    raise TimeoutException(f"WhatsApp Web não ficou pronto. Último erro: {ultimo_erro}")
+
+def abrir_whatsapp_web(driver, tentativas=3):
+    ultimo_erro = None
+
+    for tentativa in range(1, tentativas + 1):
+        try:
+            preparar_janela(driver)
+            driver.get("https://web.whatsapp.com/")
+            time.sleep(4)
+            esperar_whatsapp_pronto(driver, timeout=120)
+            return True
+        except Exception as e:
+            ultimo_erro = e
+            print(f"        ⚠ Falha ao abrir WhatsApp ({tentativa}/{tentativas}): {e}")
+            time.sleep(2)
+
+    raise TimeoutException(f"Não foi possível abrir corretamente o WhatsApp Web. Último erro: {ultimo_erro}")
+
+def localizar_caixa_mensagem(driver):
+    """
+    Procura a caixa real onde a mensagem deve ser digitada.
+    Evita depender de data-tab fixo.
+    """
+    seletores = [
+        (By.XPATH, '//footer//div[@contenteditable="true" and @role="textbox"]'),
+        (By.XPATH, '//footer//div[@contenteditable="true"]'),
+        (By.CSS_SELECTOR, "footer div[contenteditable='true'][role='textbox']"),
+        (By.CSS_SELECTOR, "footer div[contenteditable='true']"),
+        (By.XPATH, '//div[@id="main"]//footer//div[@contenteditable="true"]'),
+        (By.XPATH, '//div[contains(@aria-label, "Digite uma mensagem") and @contenteditable="true"]'),
+    ]
+
+    for by, sel in seletores:
+        try:
+            elems = driver.find_elements(by, sel)
+            for el in elems:
+                if el.is_displayed() and el.is_enabled():
+                    return el
+        except Exception:
+            continue
+
+    return None
+
+def esperar_caixa_mensagem(driver, timeout=40):
+    fim = time.time() + timeout
+    ultimo_erro = None
+
+    while time.time() < fim:
+        try:
+            caixa = localizar_caixa_mensagem(driver)
+            if caixa:
+                return caixa
+        except Exception as e:
+            ultimo_erro = e
+        time.sleep(1)
+
+    raise TimeoutException(f"Caixa de mensagem não encontrada. Último erro: {ultimo_erro}")
+
+def existe_tela_numero_invalido(driver):
+    sinais = [
+        "O número de telefone compartilhado por url é inválido",
+        "Número de telefone compartilhado por URL é inválido",
+        "Phone number shared via url is invalid",
+        "não está no WhatsApp",
+        "isn't on WhatsApp",
+    ]
+    try:
+        texto = driver.page_source.lower()
+        return any(s.lower() in texto for s in sinais)
+    except Exception:
+        return False
+
+def abrir_chat(driver, wait, nome, numero, tentativas=3):
+    """
+    Abre o chat do WhatsApp diretamente pelo número e confirma
+    pela presença real da caixa de mensagem.
+    """
+    numero_limpo = limpar_numero(numero)
+    ultimo_erro = None
+
+    for tentativa in range(1, tentativas + 1):
+        try:
+            url = f"https://web.whatsapp.com/send?phone={numero_limpo}&app_absent=0"
+            driver.get(url)
+            time.sleep(3)
+
+            if existe_tela_numero_invalido(driver):
+                raise Exception(f"Número inválido ou não encontrado no WhatsApp: {numero}")
+
+            caixa = esperar_caixa_mensagem(driver, timeout=35)
+
+            try:
+                clicar_elemento(driver, caixa)
+            except Exception:
+                pass
+
+            time.sleep(0.8)
+            return True
+
+        except Exception as e:
+            ultimo_erro = e
+            print(f"        ⚠ Tentativa {tentativa}/{tentativas} falhou ao abrir chat de {nome}: {e}")
+            time.sleep(2)
+
+    print(f"        ❌ Não consegui confirmar abertura do chat de {nome}. Último erro: {ultimo_erro}")
+    return False
+
+def limpar_caixa_mensagem(caixa):
+    try:
+        caixa.send_keys(Keys.CONTROL, "a")
+        time.sleep(0.2)
+        caixa.send_keys(Keys.DELETE)
+        time.sleep(0.2)
         return True
     except Exception:
         return False
 
 def enviar_mensagem_unica(driver, wait, mensagem):
-    """Copia o texto completo e envia com CTRL+V (garante envio único)."""
-    chat_box = wait.until(EC.presence_of_element_located(
-        (By.XPATH, "//div[@contenteditable='true'][@data-tab='10']")
-    ))
+    """
+    Copia o texto completo e envia com CTRL+V.
+    Usa localização robusta da caixa de mensagem.
+    """
+    caixa = esperar_caixa_mensagem(driver, timeout=40)
+    clicar_elemento(driver, caixa)
+    time.sleep(0.4)
+
+    limpar_caixa_mensagem(caixa)
+
     pyperclip.copy(mensagem)
-    chat_box.click()
-    time.sleep(0.3)
-    chat_box.send_keys(Keys.CONTROL, 'v')
-    time.sleep(0.6)
-    chat_box.send_keys(Keys.ENTER)
+    caixa.send_keys(Keys.CONTROL, 'v')
+    time.sleep(0.8)
+    caixa.send_keys(Keys.ENTER)
+
+    return True
 
 
 # ===== PLANILHA =====
@@ -141,7 +307,6 @@ print(f"📌 Aba do dia: {dia_atual}")
 df = pd.read_excel(caminho_planilha, sheet_name=dia_atual, header=1)
 df.columns = [normalizar(c) for c in df.columns]
 
-# valida colunas
 colunas_necessarias = {"setor", "sold", "razao social", "dia", "ciclo", "nao autorizado", "retorno"}
 faltando = colunas_necessarias - set(df.columns)
 if faltando:
@@ -158,33 +323,37 @@ df = df.rename(columns={
 })
 df = df[["setor", "sold", "razao social", "dia", "ciclo", "nao autorizado", "retorno"]].copy()
 
-# normaliza SETOR para inteiro
 df["setor"] = pd.to_numeric(df["setor"], errors="coerce").astype("Int64")
-
-# remove linhas sem setor
 df = df[df["setor"].notna()].copy()
 
-# diagnóstico rápido
 print(f"📊 Linhas lidas: {len(df)}")
 print(f"📦 Setores na planilha (únicos): {len(df['setor'].unique())}")
 
 
 # ===== WHATSAPP =====
+perfil = garantir_diretorio_perfil(r"C:\Users\av\Desktop\Automação SAR\ChromeProfile")
+
 options = Options()
-options.add_argument(r"user-data-dir=C:\Users\av\Desktop\Automação SAR\ChromeProfile")
+options.add_argument(f"user-data-dir={perfil}")
 options.add_argument("--start-maximized")
+options.add_argument("--disable-notifications")
+options.add_argument("--disable-infobars")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--no-sandbox")
 
-driver = webdriver.Chrome(service=Service(), options=options)
-driver.get("https://web.whatsapp.com")
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
+print("\n[1] ⏳ Abrindo WhatsApp Web...")
+abrir_whatsapp_web(driver, tentativas=3)
 wait = WebDriverWait(driver, 90)
-wait.until(EC.presence_of_element_located((By.XPATH, "//div[@contenteditable='true'][@data-tab='3']")))
-time.sleep(1)
+time.sleep(2)
+print("        ✅ WhatsApp pronto")
 
 # ===== ENVIO =====
 enviados = 0
 ignorados_sem_contato = 0
 sem_registros = 0
+falhas_envio = 0
 
 setores_planilha = sorted([int(x) for x in df["setor"].dropna().unique()])
 
@@ -225,7 +394,7 @@ for setor in setores_planilha:
 
     mensagem = "".join(linhas).strip()
 
-    print(f"📤 Enviando mensagem única para {nome} (Setor {setor})...")
+    print(f"\n📤 Enviando mensagem única para {nome} (Setor {setor})...")
 
     if abrir_chat(driver, wait, nome, numero):
         try:
@@ -233,8 +402,10 @@ for setor in setores_planilha:
             enviados += 1
             print(f"✅ Mensagem enviada com sucesso para {nome} (Setor {setor})")
         except Exception as e:
+            falhas_envio += 1
             print(f"❌ Falha ao enviar para {nome} (Setor {setor}): {e}")
     else:
+        falhas_envio += 1
         print(f"❌ Não consegui abrir o chat de {nome} (Setor {setor})")
 
     time.sleep(2)
@@ -243,6 +414,7 @@ print("\n🎉 Envios concluídos!")
 print(f"✅ Enviados: {enviados}")
 print(f"⚠️ Ignorados (sem contato): {ignorados_sem_contato}")
 print(f"⚠️ Sem registros (após filtro): {sem_registros}")
+print(f"❌ Falhas de envio: {falhas_envio}")
 
 if MANTER_WHATSAPP_ABERTO_NO_FIM:
     input("\nPressione ENTER para fechar o WhatsApp/Chrome...")
