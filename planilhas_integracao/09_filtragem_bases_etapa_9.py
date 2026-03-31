@@ -17,7 +17,7 @@ import pythoncom
 from win32com.client import DispatchEx
 
 # ===== Caminho fixo do arquivo =====
-XLSM_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+XLSM_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 
 # ===== Setores permitidos =====
 SETORES_OK = {

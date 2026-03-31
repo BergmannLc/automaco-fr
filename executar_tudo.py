@@ -17,6 +17,7 @@ fluxo_de_trabalho = [
     {"nome": "12_delete_retidos_12.py", "pasta": "planilhas_integracao"},
     {"nome": "13_delete_fora_de_rota_13.py", "pasta": "planilhas_integracao"},
     {"nome": "14_colagem_rota_14.py", "pasta": "planilhas_integracao"},
+    {"nome": "16_colagem_fora_de_rota_16.py", "pasta":"planilhas_integração"}
 ]
 
 def executar_automacao():

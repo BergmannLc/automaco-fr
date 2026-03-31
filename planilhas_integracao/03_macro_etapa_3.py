@@ -5,7 +5,7 @@ import time
 # ============================================================
 # CONFIGURAÇÕES
 # ============================================================
-ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 MACRO_NOME = "LIMPAR_DADOS"  # nome da macro VBA
 ABA_MACRO = "COORDENADAS"   # aba onde a macro deve rodar
 

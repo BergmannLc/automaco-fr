@@ -11,7 +11,7 @@ import win32com.client as win32
 # CONFIGURAÇÕES
 # ============================================================
 ARQUIVO_VENDAS = r"C:\Users\av\Desktop\Automação SAR\Vendas_Do_Dia.xlsx"
-ARQUIVO_DESTINO = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+ARQUIVO_DESTINO = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 
 
 # ============================================================

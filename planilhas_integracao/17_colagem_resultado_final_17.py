@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Caminhos fixos
 SRC_RESULTADO = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Google Maps\resultado_autorizacao_final.xlsx"
-DST_PLANILHA = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+DST_PLANILHA = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 
 def main():
     print("=== ETAPA 16 - COLAGEM RESULTADO FINAL ===")

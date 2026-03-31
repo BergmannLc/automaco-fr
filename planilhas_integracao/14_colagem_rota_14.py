@@ -12,7 +12,7 @@ from win32com.client import DispatchEx
 from pathlib import Path
 
 # Caminhos fixos das planilhas
-SRC_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+SRC_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 DST_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Google Maps\01 - Varejo.xlsx"
 
 def main():

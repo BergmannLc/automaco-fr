@@ -7,7 +7,7 @@ from datetime import datetime
 # ============================================================
 # CONFIGURAÇÕES
 # ============================================================
-ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\03 - Fora de Rota automatico - MARÇO.xlsm"
+ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
 ABA_COORDENADAS = "COORDENADAS"
 
 

@@ -1,3 +1,6 @@
-2026/03/26-09:42:07.071 15d0 Reusing MANIFEST C:\Users\AV\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/03/26-09:42:07.100 15d0 Recovering log #578
-2026/03/26-09:42:07.107 15d0 Reusing old log C:\Users\AV\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/000578.log 
+2026/03/31-10:22:37.967 473c Reusing MANIFEST C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/31-10:22:37.973 473c Recovering log #593
+2026/03/31-10:22:37.979 473c Reusing old log C:\Users\av\Desktop\Automação SAR\ChromeProfile\Default\Local Storage\leveldb/000593.log 
+2026/03/31-10:25:39.023 4320 Level-0 table #597: started
+2026/03/31-10:25:39.029 4320 Level-0 table #597: 14787 bytes OK
+2026/03/31-10:25:39.034 4320 Delete type=0 #593
