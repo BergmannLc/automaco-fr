@@ -10,9 +10,25 @@ Nada além deve ser alterado.
 import pythoncom
 from win32com.client import DispatchEx
 from pathlib import Path
+from datetime import datetime
 
-# Caminhos fixos das planilhas
-SRC_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
+# ============================================================
+# CONFIGURAÇÕES DINÂMICAS
+# ============================================================
+agora = datetime.now()
+ano_atual = agora.year
+mes_num = agora.strftime("%m")
+mes_nome_en = agora.strftime("%B").upper()
+
+mes_traduzido = {
+    "JANUARY": "JANEIRO", "FEBRUARY": "FEVEREIRO", "MARCH": "MARÇO",
+    "APRIL": "ABRIL", "MAY": "MAIO", "JUNE": "JUNHO",
+    "JULY": "JULHO", "AUGUST": "AGOSTO", "SEPTEMBER": "SETEMBRO",
+    "OCTOBER": "OUTUBRO", "NOVEMBER": "NOVEMBRO", "DECEMBER": "DEZEMBRO"
+}.get(mes_nome_en, "MÊS_DESCONHECIDO")
+
+# Caminhos das planilhas
+SRC_PATH = fr"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - {ano_atual}\{mes_num} - Fora de Rota automatico - {mes_traduzido}.xlsm"
 DST_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Google Maps\01 - Varejo.xlsx"
 
 def main():

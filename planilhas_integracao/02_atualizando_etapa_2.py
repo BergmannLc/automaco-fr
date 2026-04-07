@@ -2,11 +2,27 @@ import win32com.client as win32
 import shutil
 import os
 import time
+from datetime import datetime
 
 # ============================================================
-# CONFIGURAÇÕES
+# CONFIGURAÇÕES DINÂMICAS
 # ============================================================
-ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
+
+# Captura data atual
+agora = datetime.now()
+ano_atual = agora.year
+mes_num = agora.strftime("%m")
+mes_nome_en = agora.strftime("%B").upper()
+
+# Tradução para o padrão das pastas
+mes_traduzido = {
+    "JANUARY": "JANEIRO", "FEBRUARY": "FEVEREIRO", "MARCH": "MARÇO",
+    "APRIL": "ABRIL", "MAY": "MAIO", "JUNE": "JUNHO",
+    "JULY": "JULHO", "AUGUST": "AGOSTO", "SEPTEMBER": "SETEMBRO",
+    "OCTOBER": "OUTUBRO", "NOVEMBER": "NOVEMBRO", "DECEMBER": "DEZEMBRO"
+}.get(mes_nome_en, "MÊS_DESCONHECIDO")
+
+ARQUIVO_EXCEL = fr"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - {ano_atual}\{mes_num} - Fora de Rota automatico - {mes_traduzido}.xlsm"
 
 # ============================================================
 # FUNÇÃO PRINCIPAL
@@ -30,7 +46,7 @@ def atualizar_planilha(caminho_arquivo):
 
     # Inicia o Excel
     excel = win32.DispatchEx('Excel.Application')
-    excel.Visible = False  
+    excel.Visible = False
     excel.DisplayAlerts = False
     excel.AskToUpdateLinks = False
 
@@ -43,13 +59,13 @@ def atualizar_planilha(caminho_arquivo):
         for conn in wb.Connections:
             try:
                 # Se for OLEDB (Power Query)
-                if conn.Type == 1: 
+                if conn.Type == 1:
                     conn.OLEDBConnection.BackgroundQuery = False
                 # Se for ODBC
                 elif conn.Type == 2:
                     conn.ODBCConnection.BackgroundQuery = False
             except:
-                pass 
+                pass
 
         # 🔄 Atualiza todas as conexões
         print("🔄 Atualizando consultas (isso pode demorar)...")
@@ -57,10 +73,10 @@ def atualizar_planilha(caminho_arquivo):
 
         # ⏳ LOOP DE VERIFICAÇÃO (Trata o erro de "Chamada Rejeitada")
         print("⏳ Aguardando conclusão e cálculos...")
-        
-        max_tentativas = 120 # 120 * 5 segundos = 10 minutos de limite
+
+        max_tentativas = 120  # 120 * 5 segundos = 10 minutos de limite
         tentativa = 0
-        
+
         while tentativa < max_tentativas:
             try:
                 # Se o estado for 0, o Excel terminou os cálculos
@@ -69,7 +85,7 @@ def atualizar_planilha(caminho_arquivo):
             except Exception:
                 # Se cair aqui, o Excel está "ocupado" e rejeitou a chamada
                 pass
-            
+
             time.sleep(5)
             tentativa += 1
 
@@ -79,7 +95,7 @@ def atualizar_planilha(caminho_arquivo):
 
     except Exception as e:
         print(f"\n❌ Erro durante o processo: {e}")
-    
+
     finally:
         try:
             wb.Close(SaveChanges=True)

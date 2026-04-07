@@ -1,11 +1,27 @@
 import win32com.client as win32
 import os
 import time
+from datetime import datetime
 
 # ============================================================
-# CONFIGURAÇÕES
+# CONFIGURAÇÕES DINÂMICAS
 # ============================================================
-ARQUIVO_EXCEL = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
+
+# Captura data atual
+agora = datetime.now()
+ano_atual = agora.year
+mes_num = agora.strftime("%m")
+mes_nome_en = agora.strftime("%B").upper()
+
+# Tradução para o padrão das pastas
+mes_traduzido = {
+    "JANUARY": "JANEIRO", "FEBRUARY": "FEVEREIRO", "MARCH": "MARÇO",
+    "APRIL": "ABRIL", "MAY": "MAIO", "JUNE": "JUNHO",
+    "JULY": "JULHO", "AUGUST": "AGOSTO", "SEPTEMBER": "SETEMBRO",
+    "OCTOBER": "OUTUBRO", "NOVEMBER": "NOVEMBRO", "DECEMBER": "DEZEMBRO"
+}.get(mes_nome_en, "MÊS_DESCONHECIDO")
+
+ARQUIVO_EXCEL = fr"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - {ano_atual}\{mes_num} - Fora de Rota automatico - {mes_traduzido}.xlsm"
 MACRO_NOME = "LIMPAR_DADOS"  # nome da macro VBA
 ABA_MACRO = "COORDENADAS"   # aba onde a macro deve rodar
 

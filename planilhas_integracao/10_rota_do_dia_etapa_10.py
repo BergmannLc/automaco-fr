@@ -10,10 +10,25 @@ import pandas as pd
 import pythoncom
 from win32com.client import DispatchEx
 from pathlib import Path
+from datetime import datetime
 
-# Caminhos fixos
-XLSM_PATH = r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\04 - Fora de Rota automatico - ABRIL.xlsm"
-CSV_PATH = Path(r"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - 2026\BASES_FILTRADA.csv")
+# ============================================================
+# CONFIGURAÇÕES DINÂMICAS
+# ============================================================
+agora = datetime.now()
+ano_atual = agora.year
+mes_num = agora.strftime("%m")
+mes_nome_en = agora.strftime("%B").upper()
+
+mes_traduzido = {
+    "JANUARY": "JANEIRO", "FEBRUARY": "FEVEREIRO", "MARCH": "MARÇO",
+    "APRIL": "ABRIL", "MAY": "MAIO", "JUNE": "JUNHO",
+    "JULY": "JULHO", "AUGUST": "AGOSTO", "SEPTEMBER": "SETEMBRO",
+    "OCTOBER": "OUTUBRO", "NOVEMBER": "NOVEMBRO", "DECEMBER": "DEZEMBRO"
+}.get(mes_nome_en, "MÊS_DESCONHECIDO")
+
+XLSM_PATH = fr"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - {ano_atual}\{mes_num} - Fora de Rota automatico - {mes_traduzido}.xlsm"
+CSV_PATH = Path(fr"\\192.168.254.64\Grupo Fast\SAR\6. Fora de Rota\Fora de rota - {ano_atual}\BASES_FILTRADA.csv")
 
 # Aba e posição alvo
 SHEET_NAME = "COORDENADAS"
